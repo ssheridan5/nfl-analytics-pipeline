@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: nfl_raw
+    schema: nfl_raw
+    tables:
+      - name: reg_player_stats_all_seasons
+      - name: team_dimensions

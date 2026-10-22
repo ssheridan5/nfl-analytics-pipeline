@@ -1,0 +1,48 @@
+import pandas as pd
+from google.cloud import bigquery
+
+# grabbing data from nfl-verse from 2018 - Current Season (2026)
+
+years = ('2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026')
+client = bigquery.Client()
+df_all_seasons = []
+dfs_row_count = 0
+
+try:
+    for i, year in enumerate(years):
+        url = f'https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_reg_{year}.csv'
+        print(f'=== Loading {year} season into a df ===')
+        df_year = pd.read_csv(url)
+        print(f'    Loaded {len(df_year)} rows and {len(df_year.columns)} into a df')
+        # list compression to only keep necessary columns relative to QB stats -- choosing to do this in Py Pandas rather than dbt
+        cols_to_remove = [col for count, col in enumerate(df_year.columns) if (count > 43 and count < 83) or (count > 94 and count < 146)]
+        df_year.drop(columns=cols_to_remove, inplace=True)
+        df_all_seasons.append(df_year)
+        dfs_row_count += len(df_year)
+        print(f'        Successfully appended df {year} onto df_all_seasons list')
+        
+    table_id = f'{client.project}.nfl_raw.reg_player_stats_all_seasons'
+    job_config = bigquery.LoadJobConfig(
+        write_disposition = 'WRITE_TRUNCATE',
+        autodetect = True
+    )
+    
+    # creating final row count check and load to my Google BigQuery
+    
+    df = pd.concat(df_all_seasons, axis=0, ignore_index=True)
+    # df['fg_blocked_list'] = df['fg_blocked_list'].astype(str)
+    ## next is to double check the cols to drop [43::] then load
+    if len(df) == dfs_row_count:
+        job = client.load_table_from_dataframe(df, table_id, job_config = job_config)
+        job.result
+        print(f'=== Loaded to {table_id} ===')
+    else:
+        print( '=== Row Count Did Not Match ===')
+        print()
+        print(f'Concat: {len(df)} ::: df: {len(df)}')
+        print('Press Enter to exit the script')
+        row_count_mismatch_exit = input()
+except Exception as e:
+    print(f'Error occurred during execution: {e}')
+    print('Press Enter to exit script')
+    exception_exit = input()
