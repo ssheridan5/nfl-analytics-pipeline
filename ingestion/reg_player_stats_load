@@ -3,7 +3,7 @@ from google.cloud import bigquery
 
 # grabbing data from nfl-verse from 2018 - Current Season (2026)
 
-years = ('2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026')
+years = ('2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026')
 client = bigquery.Client()
 df_all_seasons = []
 dfs_row_count = 0
